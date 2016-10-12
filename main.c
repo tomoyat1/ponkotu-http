@@ -4,9 +4,15 @@
 #include <string.h>
 
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
+#include "http.h"
 
 int main()
 {
@@ -19,6 +25,11 @@ int main()
 
 	char buf[1024];
 	char inbuf[1024];
+	char urn[128];
+	char *request;
+	
+	int doc;
+	char *body;
 
 	if ((sock0 = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		perror("socket");
@@ -40,12 +51,6 @@ int main()
 		return 1;
 	}
 
-	memset(buf, 0, sizeof(buf));
-	snprintf(buf, sizeof(buf),
-	    "HTTP/1.0 200 OK\r\n"
-	    "Content-Length: 20\r\n"
-	    "Content-Type: text/html\r\n"
-	    "HELLO\r\n");
 
 	listen(sock0, 5);
 	while (1) {
@@ -58,7 +63,39 @@ int main()
 		memset(inbuf, 0, sizeof(inbuf));
 		recv(sock, inbuf, sizeof(inbuf), 0);
 		printf("%s", inbuf);
+
+		strtok(inbuf, " ");
+		request = strtok(NULL, " ");
+
+		if (strcmp(request, "/") == 0) {
+			request = "index.html";
+		}
+
+		snprintf(urn, sizeof(urn), "./docroot/%s", request);
+		if (access(urn, F_OK) < 0) {
+			printf("404 Not Found\n");
+			snprintf(buf, sizeof(buf),
+			    "HTTP/1.1 404 OK\r\n"
+			    CONTENT_LENGTH
+			    CONTENT_TYPE
+			    "\r\n"
+			    "<h1>404 Not Found</h1>", 22);
+			send(sock, buf, (int)strlen(buf), 0);
+			goto exit_loop;
+		}
+		doc = open(urn, O_RDONLY);
+		body = mmap(NULL, 100, PROT_READ, MAP_PRIVATE, doc, 0);
+
+		memset(buf, 0, sizeof(buf));
+		snprintf(buf, sizeof(buf),
+		    STATUS_LINE
+		    CONTENT_LENGTH
+		    CONTENT_TYPE
+		    "\r\n"
+		    "%s", (int)strlen(body), body);
 		send(sock, buf, (int)strlen(buf), 0);
+		munmap(body, 100);
+exit_loop:
 		close(sock);
 	}
 
