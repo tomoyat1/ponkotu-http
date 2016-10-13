@@ -12,7 +12,23 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include <signal.h>
+
 #include "http.h"
+
+struct sigaction sigint;
+
+void handle_sigint(int sig)
+{
+	printf("^C pressed! Exiting!\n");
+	exit(0);
+}
+
+void init_signal_handling()
+{
+	sigint.sa_handler = handle_sigint;
+	sigaction(SIGINT, &sigint, NULL);
+}
 
 int main()
 {
@@ -30,6 +46,8 @@ int main()
 	
 	int doc;
 	char *body;
+
+	init_signal_handling();
 
 	if ((sock0 = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		perror("socket");
