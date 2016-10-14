@@ -15,6 +15,7 @@
 #include <signal.h>
 
 #include "http.h"
+#include "ponkotu_config.h"
 
 struct sigaction sigint;
 
@@ -46,6 +47,8 @@ int main()
 	
 	int doc;
 	char *body;
+
+	printf("ponkotu-http version %d.%d starting...\n", ponkotu_VERSION_MAJOR, ponkotu_VERSION_MINOR);
 
 	init_signal_handling();
 

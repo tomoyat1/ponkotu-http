@@ -1,0 +1,2 @@
+#define ponkotu_VERSION_MAJOR @ponkotu_VERSION_MAJOR@
+#define ponkotu_VERSION_MINOR @ponkotu_VERSION_MINOR@
